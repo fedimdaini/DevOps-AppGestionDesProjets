@@ -19,15 +19,35 @@ pipeline {
             steps {
                 sh 'docker rm -f mysql-db backend-api frontend-ui 2>/dev/null || true'
                 sh 'docker compose down --remove-orphans || true'
-		sh 'docker compose up -d'
+                sh 'docker compose up -d'
             }
         }
 
         stage('Verify') {
             steps {
                 sh 'docker compose ps'
-                sh 'sleep 15'   // give backend time to start
-                sh 'curl -f http://localhost:8083/entreprise/all || true'
+                script {
+                    def maxAttempts = 60
+                    def attempt = 0
+                    def ready = false
+                    while (attempt < maxAttempts && !ready) {
+                        attempt++
+                        def status = sh(
+                            script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8083/entreprise/all || echo "000"',
+                            returnStdout: true
+                        ).trim()
+                        if (status == '200') {
+                            echo "Backend is ready after ${attempt} attempt(s)"
+                            ready = true
+                        } else {
+                            echo "Attempt ${attempt}/${maxAttempts}: backend not ready yet (HTTP ${status})"
+                            sleep 10
+                        }
+                    }
+                    if (!ready) {
+                        error 'Backend did not become ready within the timeout'
+                    }
+                }
             }
         }
     }
@@ -38,7 +58,7 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed'
-            sh 'docker compose logs --tail 30'
+            sh 'docker compose logs --tail 30 || true'
         }
-   }
+    }
 }
