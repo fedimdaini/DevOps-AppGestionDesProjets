@@ -17,8 +17,9 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh 'docker compose down'
-                sh 'docker compose up -d'
+                sh 'docker rm -f mysql-db backend-api frontend-ui 2>/dev/null || true'
+                sh 'docker compose down --remove-orphans || true'
+		sh 'docker compose up -d'
             }
         }
 
