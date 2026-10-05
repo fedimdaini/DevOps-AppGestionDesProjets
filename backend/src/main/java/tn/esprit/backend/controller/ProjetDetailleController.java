@@ -10,7 +10,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/projet-detaille")
 @AllArgsConstructor
-@CrossOrigin("*")
+@CrossOrigin(origins = {"http://192.168.33.10:4200", "http://localhost:4200"})
 public class ProjetDetailleController {
 
     IProjetDetailleService projetDetailleService;
